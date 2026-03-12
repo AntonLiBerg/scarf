@@ -1,0 +1,19 @@
+{
+    "name": "root/scarf",
+    "description": "exploring php",
+    "type": "project",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Scarf\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Medo",
+            "email": "antonliberg93@gmail.com"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {}
+}
