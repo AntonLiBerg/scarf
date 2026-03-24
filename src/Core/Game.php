@@ -15,8 +15,32 @@ final class Game implements IGame
    }
    public function InitGame():array
    {
-      $this->repo->InitDB(__DIR__ . '/../../var/app.db');
-      $map = [];
+      $map = [
+         '#######¤#####',
+         '###     #####',
+         '### #########',
+         '##  #########',
+         '##          #',
+         '##########  #',
+         '#           #',
+         '####### #####',
+         '#           #',
+         '# R #########',
+      ];
+
+      $db = $this->repo->getDB();
+      $db->exec('CREATE TABLE IF NOT EXISTS Game (id INTEGER, state TEXT, map TEXT, actions TEXT)');
+
+      $storedMap = str_replace(' ', '+', implode("\n", $map));
+      $id = (int) $db->query('SELECT COALESCE(MAX(id), 0) + 1 FROM Game')->fetchColumn();
+
+      $statement = $db->prepare('INSERT INTO Game (id, state, map, actions) VALUES (:id, :state, :map, :actions)');
+      $statement->execute([
+         ':id' => $id,
+         ':state' => 'WaitForStart',
+         ':map' => $storedMap,
+         ':actions' => json_encode([]),
+      ]);
 
       return $map;
    }
