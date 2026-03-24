@@ -10,6 +10,9 @@ final class ApiController
         if ($method === 'GET' && ($path === '/' || $path === '/health')) {
             return json_encode($this->health());
         }
+        if ($method === 'GET' && ($path === '/startgame')) {
+            return json_encode($this->startGame());
+        }
 
         if ($method === 'POST' && $path === '/echo') {
             $rawBody = file_get_contents('php://input');
