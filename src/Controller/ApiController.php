@@ -10,20 +10,20 @@ final class ApiController
 {
    private IGame $_game;
 
-   public function onRequest(string $path, string $method): string
+   public function OnRequest(string $path, string $method): string
    {
       if ($method === 'GET' && ($path === '/' || $path === '/health')) {
-         return json_encode($this->health());
+         return json_encode($this->Health());
       }
       if ($method === 'GET' && ($path === '/startgame')) {
-         return json_encode($this->startGame());
+         return json_encode($this->StartGame());
       }
 
       if ($method === 'POST' && $path === '/echo') {
          $rawBody = file_get_contents('php://input');
          $data = json_decode($rawBody ?: 'null', true);
 
-         return json_encode($this->echo($data));
+         return json_encode($this->Echo($data));
       }
 
       http_response_code(404);
@@ -33,7 +33,7 @@ final class ApiController
       ]);
    }
 
-   public function health(): array
+   public function Health(): array
    {
       return [
          'status' => 'ok',
@@ -41,13 +41,13 @@ final class ApiController
       ];
    }
 
-   public function echo(array|null $data): array
+   public function Echo(array|null $data): array
    {
       return [
          'received' => $data,
       ];
    }
-   public function startGame(): array
+   public function StartGame(): array
    {
       $this->_game = FactoryGame::MakeGame();
       return ["gameState"=> $this->_game->InitGame()];

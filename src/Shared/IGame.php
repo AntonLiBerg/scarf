@@ -7,5 +7,5 @@ use PDO;
 interface IGame
 {
     public function InitGame(): array;
-    public function updateGame(array $actions): array;
+    public function UpdateGame(array $actions): array;
 }

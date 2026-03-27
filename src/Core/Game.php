@@ -8,11 +8,11 @@ use Scarf\Shared\IRepo;
 
 final class Game implements IGame
 {
-   private IRepo $repo;
+   private IRepo $_repo;
 
    public function __construct(IRepo $repo)
    {
-      $this->repo = $repo;
+      $this->_repo = $repo;
    }
    public function InitGame():array
    {
@@ -29,10 +29,9 @@ final class Game implements IGame
          '# R #########',
       ];
 
-
-      return this->repo.addGame($map);
+      return $this->_repo->AddGame($map);
    }
-   public function updateGame(array $actions): array
+   public function UpdateGame(array $actions): array
    {
       $validActions = [];
 
@@ -47,6 +46,6 @@ final class Game implements IGame
          }
       }
 
-      return $this->repo->updateGame($validActions);
+      return $this->_repo->UpdateGame($validActions);
    }
 }

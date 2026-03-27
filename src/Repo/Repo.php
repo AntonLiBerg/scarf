@@ -26,12 +26,12 @@ final class Repo implements IRepo
         }
     }
 
-    public function getDB(): ?PDO
+    public function GetDB(): ?PDO
     {
        return $this->_db;
     }
 
-    public function addGame(array $map):array
+    public function AddGame(array $map):array
     {
 
        $storedMap = str_replace(' ', '+', implode("\n", $map));
@@ -46,7 +46,7 @@ final class Repo implements IRepo
           ':actions' => json_encode([]),
        ]);
     }
-    public function updateGame(array $actions): array
+    public function UpdateGame(array $actions): array
     {
 
        $statement = $this->_db->query('SELECT id, state, map FROM Game ORDER BY id DESC LIMIT 1');
