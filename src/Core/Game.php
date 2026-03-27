@@ -2,6 +2,7 @@
 
 namespace Scarf\Core;
 
+use Scarf\Core\GameAction;
 use Scarf\Shared\IGame;
 use Scarf\Shared\IRepo;
 
@@ -28,24 +29,24 @@ final class Game implements IGame
          '# R #########',
       ];
 
-      $db = $this->repo->getDB();
-      $db->exec('CREATE TABLE IF NOT EXISTS Game (id INTEGER, state TEXT, map TEXT, actions TEXT)');
 
-      $storedMap = str_replace(' ', '+', implode("\n", $map));
-      $id = (int) $db->query('SELECT COALESCE(MAX(id), 0) + 1 FROM Game')->fetchColumn();
-
-      $statement = $db->prepare('INSERT INTO Game (id, state, map, actions) VALUES (:id, :state, :map, :actions)');
-      $statement->execute([
-         ':id' => $id,
-         ':state' => 'WaitForStart',
-         ':map' => $storedMap,
-         ':actions' => json_encode([]),
-      ]);
-
-      return $map;
+      return this->repo.addGame($map);
    }
    public function updateGame(array $actions): array
    {
+      $validActions = [];
 
+      foreach ($actions as $action) {
+         if (!is_string($action)) {
+            continue;
+         }
+
+         $gameAction = GameAction::tryFrom($action);
+         if ($gameAction !== null) {
+            $validActions[] = $gameAction->value;
+         }
+      }
+
+      return $this->repo->updateGame($validActions);
    }
 }

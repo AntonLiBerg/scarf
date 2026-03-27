@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-base_url="${1:-http://localhost:8080}"
+base_url="${1:-${BASE_URL:-http://localhost:8000}}"
 payload='{"name":"Medo","message":"hello"}'
 
 request() {
   local method="$1"
   local path="$2"
   local body="${3:-}"
+
+  printf '== %s %s ==\n' "$method" "$path"
 
   if [[ -n "$body" ]]; then
     curl -sS -X "$method" \
@@ -22,5 +24,7 @@ request() {
 }
 
 request GET /
+request GET /health
+request GET /startgame
 request POST /echo "$payload"
 request GET /missing
