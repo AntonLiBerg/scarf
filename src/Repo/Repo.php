@@ -17,7 +17,6 @@ final class Repo implements IRepo
             $this->_db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
             $this->_db->exec('CREATE TABLE IF NOT EXISTS Game (id INTEGER, state TEXT, map TEXT, actions TEXT)');
-            $this->_db->exec('CREATE TABLE IF NOT EXISTS Game (id INTEGER, state TEXT, map TEXT, actions TEXT)');
 
             return true;
         } catch (PDOException) {
@@ -33,21 +32,36 @@ final class Repo implements IRepo
 
     public function AddGame(array $map):array
     {
+       if ($this->_db === null) {
+          return [];
+       }
 
        $storedMap = str_replace(' ', '+', implode("\n", $map));
        $id = (int) $this->_db->query('SELECT COALESCE(MAX(id), 0) + 1 FROM Game')->fetchColumn();
+       $state = 'WaitForStart';
+       $actions = [];
 
        $statement = $this->_db->prepare('INSERT INTO Game (id, state, map, actions) VALUES (:id, :state, :map, :actions)');
 
        $statement->execute([
           ':id' => $id,
-          ':state' => 'WaitForStart',
+          ':state' => $state,
           ':map' => $storedMap,
-          ':actions' => json_encode([]),
+          ':actions' => json_encode($actions),
        ]);
+
+       return [
+          'id' => $id,
+          'state' => $state,
+          'map' => $map,
+          'actions' => $actions,
+       ];
     }
     public function UpdateGame(array $actions): array
     {
+       if ($this->_db === null) {
+          return [];
+       }
 
        $statement = $this->_db->query('SELECT id, state, map FROM Game ORDER BY id DESC LIMIT 1');
        if ($statement === false) {
@@ -55,6 +69,10 @@ final class Repo implements IRepo
        }
 
        $game =  $statement->fetch(PDO::FETCH_ASSOC);
+       if ($game === false) {
+          return [];
+       }
+
        $id = (int) $game['id'] + 1;
        $state = (string) $game['state'];
        $map = (string) $game['map'];

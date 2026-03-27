@@ -9,8 +9,14 @@ final class FactoryGame
 {
    public static function MakeGame(): IGame
    {
+      if (!extension_loaded('pdo_sqlite')) {
+         throw new \RuntimeException('pdo_sqlite extension is not installed');
+      }
+
       $repo = new Repo();
-      $repo->InitDB(__DIR__ . '/../../var/app.db');
+      if (!$repo->InitDB(__DIR__ . '/../../var/app.db')) {
+         throw new \RuntimeException('Could not initialize game database');
+      }
 
       return new Game($repo);
    }

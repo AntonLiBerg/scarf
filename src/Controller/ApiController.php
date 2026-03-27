@@ -49,7 +49,15 @@ final class ApiController
    }
    public function StartGame(): array
    {
-      $this->_game = FactoryGame::MakeGame();
-      return ["gameState"=> $this->_game->InitGame()];
+      try {
+         $this->_game = FactoryGame::MakeGame();
+         return ["gameState"=> $this->_game->InitGame()];
+      } catch (\RuntimeException $error) {
+         http_response_code(500);
+
+         return [
+            'error' => $error->getMessage(),
+         ];
+      }
    }
 }
