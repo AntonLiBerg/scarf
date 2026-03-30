@@ -1,0 +1,142 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="/root/repo/scarf"
+docroot="$repo_root/public"
+router="$docroot/index.php"
+
+usage() {
+  cat <<'EOF'
+Usage: test_endpoint endpointname [json_array]
+
+Examples:
+  test_endpoint health
+  test_endpoint startgame
+  test_endpoint echo '["wood","stone","food"]'
+
+Known GET endpoints:
+  /
+  health
+  startgame
+
+All other endpoints default to POST when a JSON payload is provided.
+EOF
+}
+
+if [[ $# -lt 1 || $# -gt 2 ]]; then
+  usage >&2
+  exit 1
+fi
+
+endpoint_arg="$1"
+payload="${2:-}"
+base_url="${BASE_URL:-http://127.0.0.1:$((18000 + RANDOM % 1000))}"
+server_log="$(mktemp)"
+server_pid=""
+
+normalize_path() {
+  local raw="$1"
+
+  if [[ "$raw" == "/" ]]; then
+    printf '/\n'
+    return
+  fi
+
+  raw="${raw#/}"
+  printf '/%s\n' "$raw"
+}
+
+start_server() {
+  local host_port="$base_url"
+
+  host_port="${host_port#http://}"
+  host_port="${host_port#https://}"
+  host_port="${host_port%%/*}"
+
+  php -S "$host_port" -t "$docroot" "$router" >"$server_log" 2>&1 &
+  server_pid="$!"
+}
+
+wait_for_server() {
+  local attempt
+
+  for attempt in $(seq 1 50); do
+    if curl -sS "$base_url/health" >/dev/null 2>&1; then
+      return 0
+    fi
+
+    if ! kill -0 "$server_pid" 2>/dev/null; then
+      cat "$server_log" >&2
+      return 1
+    fi
+
+    sleep 0.1
+  done
+
+  cat "$server_log" >&2
+  return 1
+}
+
+request_method() {
+  local path="$1"
+
+  case "$path" in
+    /|/health|/startgame)
+      printf 'GET\n'
+      ;;
+    *)
+      if [[ -n "$payload" ]]; then
+        printf 'POST\n'
+      else
+        printf 'GET\n'
+      fi
+      ;;
+  esac
+}
+
+print_response() {
+  local response="$1"
+
+  if command -v jq >/dev/null 2>&1; then
+    printf '%s\n' "$response" | jq .
+    return
+  fi
+
+  printf '%s\n' "$response"
+}
+
+cleanup() {
+  if [[ -n "$server_pid" ]] && kill -0 "$server_pid" 2>/dev/null; then
+    kill "$server_pid" 2>/dev/null || true
+    wait "$server_pid" 2>/dev/null || true
+  fi
+
+  rm -f "$server_log"
+}
+
+trap cleanup EXIT
+
+path="$(normalize_path "$endpoint_arg")"
+method="$(request_method "$path")"
+
+start_server
+wait_for_server
+
+printf '== %s %s ==\n' "$method" "$path"
+
+if [[ "$method" == "POST" ]]; then
+  if [[ -z "$payload" ]]; then
+    payload='[]'
+  fi
+
+  response="$(
+    curl -sS -X POST \
+      -H 'Content-Type: application/json' \
+      -d "$payload" \
+      "$base_url$path"
+  )"
+else
+  response="$(curl -sS -X GET "$base_url$path")"
+fi
+
+print_response "$response"

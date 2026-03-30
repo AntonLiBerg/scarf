@@ -14,6 +14,7 @@ final class Game implements IGame
    {
       $this->_repo = $repo;
    }
+
    public function InitGame():array
    {
       $map = [
