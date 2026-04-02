@@ -49,19 +49,33 @@ wait_for_server() {
 request() {
   local method="$1"
   local path="$2"
-  local body="${3:-}"
+  local expected_status="$3"
+  local body="${4:-}"
+  local response_file
+  local status
+
+  response_file="$(mktemp)"
 
   printf '== %s %s ==\n' "$method" "$path"
 
   if [[ -n "$body" ]]; then
-    curl -sS -X "$method" \
+    status="$(curl -sS -o "$response_file" -w '%{http_code}' -X "$method" \
       -H 'Content-Type: application/json' \
       -d "$body" \
-      "$base_url$path"
+      "$base_url$path")"
   else
-    curl -sS -X "$method" \
-      "$base_url$path"
+    status="$(curl -sS -o "$response_file" -w '%{http_code}' -X "$method" \
+      "$base_url$path")"
   fi
+
+  cat "$response_file"
+  rm -f "$response_file"
+
+  if [[ "$status" != "$expected_status" ]]; then
+    printf 'Expected HTTP %s, got %s for %s %s\n' "$expected_status" "$status" "$method" "$path" >&2
+    return 1
+  fi
+
   printf '\n'
 }
 
@@ -70,8 +84,8 @@ trap cleanup EXIT
 start_server
 wait_for_server
 
-request GET /
-request GET /health
-request GET /startgame
-request POST /echo "$payload"
-request GET /missing
+request GET / 200
+request GET /health 200
+request GET /startgame 200
+request POST /echo 200 "$payload"
+request GET /missing 404

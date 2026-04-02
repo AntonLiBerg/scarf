@@ -57,13 +57,13 @@ final class Repo implements IRepo
           'actions' => $actions,
        ];
     }
-    public function UpdateGame(array $actions, int $id): array
+    public function UpdateGame(array $actions): array
     {
        if ($this->_db === null) {
           return [];
        }
 
-       $statement = $this->_db->query('SELECT id, state, map FROM Game WHERE id = '+$id);
+       $statement = $this->_db->query('SELECT id, state, map FROM Game ORDER BY id DESC LIMIT 1');
        if ($statement === false) {
           return [];
        }
@@ -73,14 +73,13 @@ final class Repo implements IRepo
           return [];
        }
 
+       $id = (int) $game['id'];
        $state = (string) $game['state'];
        $map = (string) $game['map'];
 
-       $statement = $this->_db->prepare('INSERT INTO Game (id, state, map, actions) VALUES (:id, :state, :map, :actions)');
+       $statement = $this->_db->prepare('UPDATE Game SET actions = :actions WHERE id = :id');
        $statement->execute([
           ':id' => $id,
-          ':state' => $state,
-          ':map' => $map,
           ':actions' => json_encode($actions),
        ]);
 

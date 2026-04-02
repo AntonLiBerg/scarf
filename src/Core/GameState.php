@@ -2,7 +2,8 @@
 
 
 namespace Scarf\Core;
-enum GameActions: string
+
+enum GameState: string
 {
    case WaitForStart = "WaitForStart";
    case WaitingForInput = 'WaitingForInput';
