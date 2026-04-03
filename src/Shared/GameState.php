@@ -1,7 +1,6 @@
 <?php
 
-
-namespace Scarf\Core;
+namespace Scarf\Shared;
 
 enum GameState: string
 {

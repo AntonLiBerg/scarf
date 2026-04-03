@@ -8,6 +8,10 @@ use Scarf\Shared\IGame;
 
 final class ApiController
 {
+    private const ERROR_KEY = 'error';
+    private const INPUT_STREAM = 'php://input';
+    private const STATUS_INTERNAL_SERVER_ERROR = 500;
+
     private IGame $_game;
 
     public function OnRequest(string $path, string $method): string
@@ -20,21 +24,21 @@ final class ApiController
         }
 
         if ($method === 'POST' && $path === '/echo') {
-            $rawBody = file_get_contents('php://input');
+            $rawBody = file_get_contents(self::INPUT_STREAM);
             $data = json_decode($rawBody ?: 'null', true);
 
             return json_encode($this->Echo($data));
         }
 
         if ($method === 'POST' && $path === '/trysolution') {
-            $rawBody = file_get_contents('php://input');
+            $rawBody = file_get_contents(self::INPUT_STREAM);
             $data = json_decode($rawBody ?: 'null', true);
 
             if (!is_array($data) || !isset($data['id']) || !is_array($data['actions'])) {
                 http_response_code(400);
 
                 return json_encode([
-                    'error' => 'Invalid request',
+                    self::ERROR_KEY => 'Invalid request',
                 ]);
             }
 
@@ -44,7 +48,7 @@ final class ApiController
         http_response_code(404);
 
         return json_encode([
-            'error' => 'Not found',
+            self::ERROR_KEY => 'Not found',
         ]);
     }
 
@@ -70,10 +74,10 @@ final class ApiController
 
             return ['gameState' => $this->_game->InitGame()];
         } catch (\RuntimeException $error) {
-            http_response_code(500);
+            http_response_code(self::STATUS_INTERNAL_SERVER_ERROR);
 
             return [
-                'error' => $error->getMessage(),
+                self::ERROR_KEY => $error->getMessage(),
             ];
         }
     }
@@ -87,10 +91,10 @@ final class ApiController
 
             return $this->_game->TrySolution($id, $actions);
         } catch (\RuntimeException $error) {
-            http_response_code(500);
+            http_response_code(self::STATUS_INTERNAL_SERVER_ERROR);
 
             return [
-                'error' => $error->getMessage(),
+                self::ERROR_KEY => $error->getMessage(),
             ];
         }
     }

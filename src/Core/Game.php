@@ -5,9 +5,30 @@ namespace Scarf\Core;
 use Scarf\Core\GameAction;
 use Scarf\Shared\IGame;
 use Scarf\Shared\IRepo;
+use Scarf\Shared\UAscii;
 
 final class Game implements IGame
 {
+    private const DEFAULT_MAP = [
+        '#######G#####',
+        '###     #####',
+        '### #########',
+        '##  #########',
+        '##          #',
+        '##########  #',
+        '#           #',
+        '####### #####',
+        '#           #',
+        '# R #########',
+    ];
+
+    private const POSITION_NOT_FOUND = 'e,e';
+    private const RESULT_NOT_FOUND = 'NotFound';
+    private const RESULT_BAD_MAP = 'bad map';
+    private const RESULT_BAD_ACTIONS = 'bad actions';
+    private const RESULT_INCORRECT = 'incorrect';
+    private const RESULT_CORRECT = 'correct';
+
     private IRepo $_repo;
 
     public function __construct(IRepo $repo)
@@ -17,29 +38,15 @@ final class Game implements IGame
 
     public function InitGame(): array
     {
-        $map = [
-            '#######G#####',
-            '###     #####',
-            '### #########',
-            '##  #########',
-            '##          #',
-            '##########  #',
-            '#           #',
-            '####### #####',
-            '#           #',
-            '# R #########',
-        ];
-
-        return $this->_repo->AddGame($map);
+        return $this->_repo->AddGame(self::DEFAULT_MAP);
     }
 
     public function TrySolution(int $id, array $actions): array
     {
         $game = $this->_repo->GetGame($id);
         if ($game === []) {
-            return ['result' => 'NotFound'];
+            return ['result' => self::RESULT_NOT_FOUND];
         }
-
 
         $startGoalMap = $this->MapToDictionary($game['map']);
         $posStart = $startGoalMap['posStart'];
@@ -47,8 +54,8 @@ final class Game implements IGame
         $map = $startGoalMap['map'];
         $resMap = $startGoalMap['map'];
 
-        if ($posStart === 'e,e' || $posGoal === 'e,e') {
-            return ['result' => 'bad map'];
+        if ($posStart === self::POSITION_NOT_FOUND || $posGoal === self::POSITION_NOT_FOUND) {
+            return ['result' => self::RESULT_BAD_MAP];
         }
 
         [$x, $y] = array_map('intval', explode(',', $posStart));
@@ -59,7 +66,7 @@ final class Game implements IGame
             }
 
             if (!$action instanceof GameAction) {
-                return ['result' => 'bad actions'];
+                return ['result' => self::RESULT_BAD_ACTIONS];
             }
 
             $nextX = $x;
@@ -76,11 +83,11 @@ final class Game implements IGame
             }
 
             $nextPos = "$nextX,$nextY";
-            if (!isset($map[$nextPos]) || $map[$nextPos] === '#') {
-                return ['result' => 'incorrect', 'resMap' => $resMap];
+            if (!isset($map[$nextPos]) || $map[$nextPos] === UAscii::WALL) {
+                return ['result' => self::RESULT_INCORRECT, 'resMap' => $resMap];
             } else {
-                $resMap["$x,$y"] = '+';
-                $resMap[$nextPos] = 'R';
+                $resMap["$x,$y"] = UAscii::PLUS;
+                $resMap[$nextPos] = UAscii::ROBOT;
             }
 
             $x = $nextX;
@@ -88,13 +95,13 @@ final class Game implements IGame
         }
 
         if ("$x,$y" !== $posGoal) {
-            return ['result' => 'incorrect', 'resMap' => $resMap];
+            return ['result' => self::RESULT_INCORRECT, 'resMap' => $resMap];
         }
 
         $this->_repo->UpdateGame($id, $actions);
 
         return [
-            'result' => 'correct',
+            'result' => self::RESULT_CORRECT,
             'resMap' => $resMap,
         ];
     }
@@ -102,19 +109,19 @@ final class Game implements IGame
     private function MapToDictionary(array|string $map): array
     {
         if (is_string($map)) {
-            $map = explode("\n", str_replace('+', ' ', $map));
+            $map = explode(UAscii::NEWLINE, str_replace(UAscii::PLUS, UAscii::SPACE, $map));
         }
 
         $mapDict = [];
-        $posStart = 'e,e';
-        $posGoal = 'e,e';
+        $posStart = self::POSITION_NOT_FOUND;
+        $posGoal = self::POSITION_NOT_FOUND;
         foreach ($map as $y => $row) {
             foreach (str_split($row) as $x => $tile) {
                 $key = "$x,$y";
                 $mapDict[$key] = $tile;
-                if ($tile === 'R') {
+                if ($tile === UAscii::ROBOT) {
                     $posStart = $key;
-                } elseif ($tile === 'G') {
+                } elseif ($tile === UAscii::GOAL) {
                     $posGoal = $key;
                 }
             }
