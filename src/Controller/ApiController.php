@@ -26,6 +26,21 @@ final class ApiController
             return json_encode($this->Echo($data));
         }
 
+        if ($method === 'POST' && $path === '/trysolution') {
+            $rawBody = file_get_contents('php://input');
+            $data = json_decode($rawBody ?: 'null', true);
+
+            if (!is_array($data) || !isset($data['id']) || !is_array($data['actions'])) {
+                http_response_code(400);
+
+                return json_encode([
+                    'error' => 'Invalid request',
+                ]);
+            }
+
+            return json_encode($this->TrySolution((int) $data['id'], $data['actions']));
+        }
+
         http_response_code(404);
 
         return json_encode([
@@ -66,9 +81,11 @@ final class ApiController
     public function TrySolution(int $id, array $actions): array
     {
         try {
-            $res = $this->_game.TrySolution($id, $actions);
+            if (!isset($this->_game)) {
+                $this->_game = FactoryGame::MakeGame();
+            }
 
-            return ['result' => $res];
+            return $this->_game->TrySolution($id, $actions);
         } catch (\RuntimeException $error) {
             http_response_code(500);
 

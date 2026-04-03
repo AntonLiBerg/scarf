@@ -33,7 +33,7 @@ final class Repo implements IRepo
 
         $storedMap = str_replace(' ', '+', implode("\n", $map));
         $id = (int) $this->_db->query('SELECT COALESCE(MAX(id), 0) + 1 FROM Game')->fetchColumn();
-        $state = 'WaitForStart';
+        $state = 'WaitingForInput';
         $actions = [];
 
         $statement = $this->_db->prepare('INSERT INTO Game (id, state, map, actions) VALUES (:id, :state, :map, :actions)');
