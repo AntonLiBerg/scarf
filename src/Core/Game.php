@@ -8,45 +8,33 @@ use Scarf\Shared\IRepo;
 
 final class Game implements IGame
 {
-   private IRepo $_repo;
+    private IRepo $_repo;
 
-   public function __construct(IRepo $repo)
-   {
-      $this->_repo = $repo;
-   }
+    public function __construct(IRepo $repo)
+    {
+        $this->_repo = $repo;
+    }
 
-   public function InitGame():array
-   {
-      $map = [
-         '#######¤#####',
-         '###     #####',
-         '### #########',
-         '##  #########',
-         '##          #',
-         '##########  #',
-         '#           #',
-         '####### #####',
-         '#           #',
-         '# R #########',
-      ];
+    public function InitGame(): array
+    {
+        $map = [
+            '#######¤#####',
+            '###     #####',
+            '### #########',
+            '##  #########',
+            '##          #',
+            '##########  #',
+            '#           #',
+            '####### #####',
+            '#           #',
+            '# R #########',
+        ];
 
-      return $this->_repo->AddGame($map);
-   }
-   public function UpdateGame(array $actions): array
-   {
-      $validActions = [];
+        return $this->_repo->AddGame($map);
+    }
 
-      foreach ($actions as $action) {
-         if (!is_string($action)) {
-            continue;
-         }
-
-         $gameAction = GameAction::tryFrom($action);
-         if ($gameAction !== null) {
-            $validActions[] = $gameAction->value;
-         }
-      }
-
-      return $this->_repo->UpdateGame($validActions);
-   }
+    public function TrySolution(int $id, array $actions): bool
+    {
+        $game = $this->_repo->GetGame($id);
+    }
 }

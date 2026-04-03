@@ -6,10 +6,8 @@ use PDO;
 
 interface IRepo
 {
-   public function AddGame(array $map):array;
-   public function InitDB(string $dbPath): bool;
-
-   public function GetDB(): ?PDO;
-
-   public function UpdateGame(array $actions): array;
+    public function AddGame(array $map): array;
+    public function InitDB(string $dbPath): bool;
+    public function GetGame(int $id): array;
+    public function UpdateGame(int $id, array $actions): array;
 }

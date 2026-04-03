@@ -20,74 +20,88 @@ final class Repo implements IRepo
 
             return true;
         } catch (PDOException) {
-           $this->_db = null;
-           return false;
+            $this->_db = null;
+            return false;
         }
     }
 
-    public function GetDB(): ?PDO
+    public function AddGame(array $map): array
     {
-       return $this->_db;
+        if ($this->_db === null) {
+            return [];
+        }
+
+        $storedMap = str_replace(' ', '+', implode("\n", $map));
+        $id = (int) $this->_db->query('SELECT COALESCE(MAX(id), 0) + 1 FROM Game')->fetchColumn();
+        $state = 'WaitForStart';
+        $actions = [];
+
+        $statement = $this->_db->prepare('INSERT INTO Game (id, state, map, actions) VALUES (:id, :state, :map, :actions)');
+
+        $statement->execute([
+            ':id' => $id,
+            ':state' => $state,
+            ':map' => $storedMap,
+            ':actions' => json_encode($actions),
+        ]);
+
+        return [
+            'id' => $id,
+            'state' => $state,
+            'map' => $map,
+            'actions' => $actions,
+        ];
     }
 
-    public function AddGame(array $map):array
+    public function UpdateGame(int $id, array $actions): array
     {
-       if ($this->_db === null) {
-          return [];
-       }
+        if ($this->_db === null) {
+            return [];
+        }
 
-       $storedMap = str_replace(' ', '+', implode("\n", $map));
-       $id = (int) $this->_db->query('SELECT COALESCE(MAX(id), 0) + 1 FROM Game')->fetchColumn();
-       $state = 'WaitForStart';
-       $actions = [];
+        $game = $this->GetGame($id);
+        if ($game === []) {
+            return [];
+        }
 
-       $statement = $this->_db->prepare('INSERT INTO Game (id, state, map, actions) VALUES (:id, :state, :map, :actions)');
+        $id = (int) $game['id'];
+        $state = (string) $game['state'];
+        $map = (string) $game['map'];
 
-       $statement->execute([
-          ':id' => $id,
-          ':state' => $state,
-          ':map' => $storedMap,
-          ':actions' => json_encode($actions),
-       ]);
+        $statement = $this->_db->prepare('UPDATE Game SET actions = :actions WHERE id = :id');
+        $statement->execute([
+            ':id' => $id,
+            ':actions' => json_encode($actions),
+        ]);
 
-       return [
-          'id' => $id,
-          'state' => $state,
-          'map' => $map,
-          'actions' => $actions,
-       ];
+        return [
+            'id' => $id,
+            'state' => $state,
+            'map' => explode("\n", str_replace('+', ' ', $map)),
+            'actions' => $actions,
+        ];
     }
-    public function UpdateGame(array $actions): array
+
+    public function GetGame(int $id): array
     {
-       if ($this->_db === null) {
-          return [];
-       }
+        return $this->PGetGame($id);
+    }
 
-       $statement = $this->_db->query('SELECT id, state, map FROM Game ORDER BY id DESC LIMIT 1');
-       if ($statement === false) {
-          return [];
-       }
+    private function PGetGame(int $id): array
+    {
+        if ($this->_db === null) {
+            return [];
+        }
 
-       $game =  $statement->fetch(PDO::FETCH_ASSOC);
-       if ($game === false) {
-          return [];
-       }
+        $statement = $this->_db->prepare('SELECT id, state, map FROM Game WHERE id = :id');
+        $statement->execute([
+            ':id' => $id,
+        ]);
+        $game = $statement->fetch(PDO::FETCH_ASSOC);
+        if ($game === false) {
+            return [];
+        }
 
-       $id = (int) $game['id'];
-       $state = (string) $game['state'];
-       $map = (string) $game['map'];
-
-       $statement = $this->_db->prepare('UPDATE Game SET actions = :actions WHERE id = :id');
-       $statement->execute([
-          ':id' => $id,
-          ':actions' => json_encode($actions),
-       ]);
-
-       return [
-          'id' => $id,
-          'state' => $state,
-          'map' => explode("\n", str_replace('+', ' ', $map)),
-          'actions' => $actions,
-       ];
+        return $game;
     }
 }
